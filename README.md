@@ -3,199 +3,156 @@
 **Everything happening in Khulna, in one place.**
 
 A local media and discovery platform for Khulna, Bangladesh — news, offers,
-events with booking, and a Business With Us channel with inquiry management.
+events, and a Business With Us channel with direct contact options.
 
-Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · PostgreSQL · Prisma**.
-
----
-
-## What's inside
-
-| Area | What it does |
-|---|---|
-| **Home** | Editorial hero, latest + trending news, live offers, upcoming events, business CTA |
-| **News** | Photo-card articles, search, category filter, detail pages with related stories and optional “Read Full Article →” external link |
-| **Offers** | Category-filtered live deals (Food / Cafe / Fashion / Shopping / Services / Other), expiry-aware (expired offers hide automatically), detail pages with terms and claim CTAs |
-| **Events** | Upcoming/past events, detail pages with **Book Now** — external booking URL *or* built-in booking form (name, phone, email, tickets) with capacity checks |
-| **Business With Us** | Service overview + inquiry form stored in the database |
-| **Admin** | Password-protected dashboard: stats overview, full CRUD for news/offers/events, publish/feature/active toggles, booking management, inquiry inbox |
+Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · Static Data Layer · PostgreSQL & Prisma (Local Admin)**.
 
 ---
 
-## 1. Install dependencies
+## Deploying the Public Website to Vercel
 
-You need **Node.js 18.18+** (or 20+) installed. Then, in the project folder:
+The public-facing Khulna Bites website is fully decoupled and optimized for zero-configuration, lightning-fast deployment on **Vercel** with **no PostgreSQL or cloud database required**.
+
+### Why PostgreSQL is NOT required for Vercel deployment
+
+1. **Decoupled Public Data Layer**: All public pages (`/`, `/news`, `/news/[slug]`, `/offers`, `/offers/[slug]`, `/events`, `/events/[slug]`, `/business`) read from `lib/demo-data.ts`.
+2. **Evergreen Relative Dates**: News, offers, and events calculate dynamic relative dates so that active deals, upcoming events, and fresh stories stay live and relevant without database maintenance.
+3. **Static Site Generation (SSG)**: All dynamic detail routes use `generateStaticParams()` to pre-render static HTML pages at build time.
+4. **Graceful Public Actions**:
+   - **Events**: Events with an external booking URL provide direct links to the organizer's ticket portal; events without external tickets display organizer venue/date details and notice that booking info is coming soon.
+   - **Business With Us**: The inquiry form validates user input and immediately creates an email mailto draft and on-screen confirmation, allowing prospective sponsors/advertisers to reach the desk directly without an online database.
+
+### What remains Local-Only
+
+The following features remain available for local development and future database/admin expansion:
+- `/admin/login` and the protected `/admin` dashboard
+- Prisma schema, migrations, seed script (`npm run db:seed`), and Prisma Studio (`npm run db:studio`)
+- Full administrative CRUD operations for news, offers, events, bookings, and inquiry inbox
+- Local PostgreSQL instance
+
+### How to deploy from GitHub to Vercel
+
+1. **Push your repository to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Deploy public website to Vercel"
+   git push origin main
+   ```
+
+2. **Import into Vercel**:
+   - Go to [vercel.com/new](https://vercel.com/new).
+   - Select your GitHub repository (`khulna-bites`).
+   - Framework Preset: **Next.js** (auto-detected).
+   - Root Directory: `./` (or the folder containing `package.json`).
+
+3. **Environment Variables**:
+   - **Zero required environment variables!**
+   - (Optional) `NEXT_PUBLIC_SITE_URL`: Your custom domain (e.g. `https://khulnabites.com` or `https://khulna-bites.vercel.app`).
+
+4. **Click "Deploy"**:
+   - Vercel runs `npm run build` and deploys your public website live in under 1 minute.
+
+---
+
+## Local Development (Next.js + Prisma + PostgreSQL + Admin Dashboard)
+
+For full local development with the admin dashboard and database features:
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-## 2. Create your `.env` file
+### 2. Configure `.env` file
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` in a text editor. For local development the defaults work as-is —
-you only need to change them if you picked a different database password in the
-next step.
+Ensure your `.env` contains:
+```env
+DATABASE_URL="postgresql://khulna:khulna_dev_password@localhost:5432/khulna_bites"
+AUTH_SECRET="your-32-char-random-secret"
+ADMIN_SEED_EMAIL="admin@khulnabites.com"
+ADMIN_SEED_PASSWORD="khulna123"
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+```
 
-## 3. Set up PostgreSQL
+### 3. Start PostgreSQL
 
-Pick **one** of these two options.
-
-### Option A — Docker (easiest)
-
-If you have Docker installed:
-
+#### Option A — Docker Compose
 ```bash
 docker compose up -d
 ```
 
-That's it — a PostgreSQL 16 database called `khulna_bites` now runs on
-`localhost:5432` with the user/password that match the default `DATABASE_URL`
-in `.env.example`.
-
-### Option B — Local PostgreSQL install
-
-1. Install PostgreSQL from https://www.postgresql.org/download/ (any 14+ version).
-2. Open the `psql` console (on Windows: “SQL Shell (psql)”; on macOS/Linux: `sudo -u postgres psql`).
-3. Create a user and database:
-
+#### Option B — Local PostgreSQL Server
+Create the local user and database:
 ```sql
 CREATE USER khulna WITH PASSWORD 'khulna_dev_password';
 CREATE DATABASE khulna_bites OWNER khulna;
 ```
 
-> If you choose a different password, update `DATABASE_URL` in `.env` to match.
-> The format is: `postgresql://USER:PASSWORD@HOST:PORT/DATABASE`
-
-## 4. Create the database tables
+### 4. Run Migrations & Seed Local Database
 
 ```bash
 npm run db:push
-```
-
-This reads `prisma/schema.prisma` and creates all tables. (When the project
-matures, use `npm run db:migrate` instead to keep a migration history.)
-
-## 5. Load the demo content
-
-```bash
 npm run db:seed
 ```
 
-This creates the first admin account plus realistic sample Khulna content:
-6 news articles, 6 offers (one intentionally expired), 6 events (one draft),
-3 bookings and 3 business inquiries — so the site looks complete immediately.
-Seeding wipes existing data first, so don't re-run it once you have real content.
-
-## 6. Start the development server
+### 5. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000) for the public site, or [http://localhost:3000/admin](http://localhost:3000/admin) for the admin dashboard (Login: `admin@khulnabites.com` / `khulna123`).
 
-## 7. Access the admin dashboard
-
-Go to http://localhost:3000/admin and sign in with the seeded account:
-
-- **Email:** `admin@khulnabites.com`
-- **Password:** `khulna123`
-
-(These come from `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` in your `.env` at
-seed time. Change the password before deploying anywhere real.)
-
-## 8. Create your first admin account
-
-The seed script already creates one (step 5). To change its credentials, edit
-`ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` in `.env` **before** running
-`npm run db:seed` again on a fresh database.
-
-## 9. Build for production
+### 6. Build and Test Locally
 
 ```bash
 npm run build
 npm run start
 ```
 
-## 10. Project structure
+---
+
+## Project Architecture
 
 ```
 khulna-bites/
 ├── app/                        # Next.js App Router pages
-│   ├── page.tsx                # Home
-│   ├── news/                   # News list + [slug] article page
-│   ├── offers/                 # Offers list + [slug] detail page
-│   ├── events/                 # Events list + [slug] detail (booking)
-│   ├── business/               # Business With Us + inquiry form
-│   ├── actions.ts              # Public server actions (booking, inquiry)
-│   └── admin/
-│       ├── login/              # Admin sign-in
-│       ├── actions.ts          # Admin server actions (auth + all CRUD)
-│       └── (dashboard)/        # Protected pages (sidebar layout)
-│           ├── page.tsx        # Overview stats
-│           ├── news/           # News list, new, [id]/edit
-│           ├── offers/         # Offers list, new, [id]/edit
-│           ├── events/         # Events list, new, [id]/edit, [id]/bookings
-│           └── inquiries/      # Business inquiry inbox
-├── components/                 # Public UI (cards, header, forms, filters)
-│   └── admin/                  # Admin UI (sidebar, editor forms, row actions)
+│   ├── page.tsx                # Home (hero, news, offers, events, CTA)
+│   ├── news/                   # News list & [slug] article pages
+│   ├── offers/                 # Offers list & [slug] deal pages
+│   ├── events/                 # Events list & [slug] event pages
+│   ├── business/               # Business With Us & inquiry form
+│   ├── actions.ts              # Public server actions (safe fallback)
+│   └── admin/                  # [Local-Only] Protected admin dashboard & CRUD
+├── components/                 # Reusable UI components
+│   ├── news-card.tsx           # News story cards & rows
+│   ├── offer-card.tsx          # Discount offer cards
+│   ├── event-card.tsx          # Event date-badge cards
+│   ├── inquiry-form.tsx        # Client inquiry form
+│   ├── site-header.tsx         # Responsive navigation & mobile drawer
+│   └── site-footer.tsx         # Footer links & copyright
 ├── lib/
-│   ├── db.ts                   # Prisma client singleton
-│   ├── auth.ts                 # JWT session cookie (jose) + getAdmin()
-│   ├── uploads.ts              # Cover image uploads → /public/uploads
-│   └── utils.ts                # slugify, dates, offer/event helpers
+│   ├── types.ts                # TypeScript data interfaces
+│   ├── demo-data.ts            # Public static/demo repository & query helpers
+│   ├── db.ts                   # Prisma client singleton (Local-only)
+│   ├── auth.ts                 # JWT session & admin authentication (Local-only)
+│   └── utils.ts                # Date formatting, slugify, classnames
 ├── prisma/
-│   ├── schema.prisma           # Database schema
-│   └── seed.ts                 # Demo content
-├── public/
-│   ├── images/                 # Demo cover images
-│   └── uploads/                # User-uploaded covers (gitignored)
-├── middleware.ts               # Protects /admin/* routes
-├── scripts/generate-assets.py  # Regenerates logo crops + demo covers
-├── docker-compose.yml          # Optional one-command PostgreSQL
-└── .env.example                # Documented environment variables
+│   ├── schema.prisma           # Prisma models & relations
+│   └── seed.ts                 # Local database seed script
+└── public/
+    └── images/                 # Optimized local assets & demo images
 ```
 
 ---
 
-## How content flows
+## Security Notes
 
-- **Publish content:** Admin → News/Offers/Events → *New* → fill the form →
-  upload a cover image → save. Published items appear on the public site
-  immediately (public pages revalidate every 60 seconds).
-- **Offers expire themselves:** the public offers page only shows offers that
-  are `active` **and** whose `expiryDate` hasn't passed.
-- **Event booking:** if an event has an external `bookingUrl`, “Book Now” links
-  there. Otherwise a built-in form stores bookings in the database (status:
-  pending/confirmed/cancelled), with a capacity check. View them per event in
-  the admin. Online payment is intentionally not included — the `Booking` model
-  is ready for a `paymentStatus` field later.
-- **Business inquiries:** the Business With Us form stores submissions; admins
-  triage them in the inbox (read/unread, new/contacted/closed, delete).
-
-## Security notes
-
-- Admin routes are protected twice: `middleware.ts` (JWT cookie check at the
-  edge) and the dashboard layout (re-validates against the database).
-- Passwords are hashed with bcrypt; sessions are signed JWTs (jose) in
-  httpOnly cookies; secrets live only in `.env` (never committed).
-
-## Bengali content
-
-The font stack includes Noto Sans Bengali and everything is UTF-8 — you can
-write Bangla titles, excerpts and body text in the admin and they will render
-correctly.
-
-## Notes for deployment
-
-- Set `DATABASE_URL`, `AUTH_SECRET` (run `openssl rand -base64 32`) and
-  `NEXT_PUBLIC_SITE_URL` as environment variables on your host.
-- Uploaded images are stored on the local disk under `public/uploads` — on
-  serverless platforms (Vercel etc.) the filesystem is ephemeral, so swap
-  `lib/uploads.ts` for object storage (S3/R2/Uploadthing) before going live.
-- On serverless, avoid statically prerendering DB-backed pages or ensure the
-  database is reachable at build time (public pages use a 60s revalidation).
+- No database credentials, API keys, or JWT secrets are hardcoded in public code.
+- `.env` and `.env*.local` are strictly `.gitignore`d.
+- Admin routes are protected with JWT cookies and force-dynamic server-side validation.

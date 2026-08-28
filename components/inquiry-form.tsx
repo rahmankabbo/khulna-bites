@@ -18,8 +18,30 @@ export function InquiryForm() {
   if (state.ok) {
     return (
       <div className="rounded-2xl border border-sundari/30 bg-sundari-tint p-8 text-center">
-        <p className="font-display text-xl font-semibold text-sundari-dark">Message received!</p>
-        <p className="mt-2 text-sm text-sundari-dark/80">{state.message}</p>
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sundari text-white shadow-sm">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <p className="mt-4 font-display text-xl font-semibold text-sundari-dark">Message received!</p>
+        <p className="mt-2 text-sm leading-relaxed text-sundari-dark/80">{state.message}</p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {state.mailtoUrl && (
+            <a
+              href={state.mailtoUrl}
+              className="btn-primary !text-xs"
+            >
+              Open in Email App →
+            </a>
+          )}
+          <a
+            href="mailto:hello@khulnabites.com"
+            className="btn-outline !text-xs"
+          >
+            Email Desk Directly
+          </a>
+        </div>
       </div>
     );
   }

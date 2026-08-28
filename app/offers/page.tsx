@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
-import { startOfToday } from "@/lib/utils";
+import { getCategories, getOffers } from "@/lib/demo-data";
 import { OfferCard } from "@/components/offer-card";
 import { OfferFilter } from "@/components/offer-filter";
 
@@ -16,21 +15,13 @@ type Props = { searchParams: Promise<{ category?: string }> };
 export default async function OffersPage({ searchParams }: Props) {
   const { category } = await searchParams;
 
-  const categories = await db.category.findMany({
-    where: { type: "OFFER" },
-    orderBy: { name: "asc" },
-  });
-
-  // Public list: active AND not expired (expiry is enforced here automatically).
-  const offers = await db.offer.findMany({
-    where: {
-      active: true,
-      expiryDate: { gte: startOfToday() },
-      ...(category ? { category: { slug: category } } : {}),
-    },
-    include: { category: true },
-    orderBy: { expiryDate: "asc" },
-  });
+  const [categories, offers] = await Promise.all([
+    getCategories("OFFER"),
+    getOffers({
+      category,
+      activeOnly: true,
+    }),
+  ]);
 
   return (
     <div className="container-site py-12 sm:py-16">

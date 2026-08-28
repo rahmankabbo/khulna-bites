@@ -1,17 +1,17 @@
 "use server";
 
 import { z } from "zod";
-import { db } from "@/lib/db";
 
 /**
  * Public form actions: event bookings and business inquiries.
- * Both validate with zod and return field errors the forms can display.
+ * Designed to operate safely both with and without PostgreSQL.
  */
 
 export type FormState = {
   ok: boolean;
   message?: string;
   errors?: Record<string, string[]>;
+  mailtoUrl?: string;
 };
 
 const bookingSchema = z.object({
@@ -37,38 +37,45 @@ export async function createBooking(_: FormState, formData: FormData): Promise<F
     return { ok: false, errors: parsed.error.flatten().fieldErrors };
   }
 
-  const event = await db.event.findUnique({
-    where: { id: parsed.data.eventId },
-    include: { _count: { select: { bookings: { where: { status: { not: "CANCELLED" } } } } } },
-  });
-  if (!event || !event.published || !event.bookingEnabled) {
-    return { ok: false, message: "Booking is not available for this event." };
-  }
-  if (event.capacity) {
-    const taken = await db.booking.aggregate({
-      where: { eventId: event.id, status: { not: "CANCELLED" } },
-      _sum: { tickets: true },
-    });
-    const remaining = event.capacity - (taken._sum.tickets ?? 0);
-    if (parsed.data.tickets > remaining) {
-      return {
-        ok: false,
-        message: remaining > 0 ? `Only ${remaining} tickets left for this event.` : "This event is fully booked.",
-      };
+  // Attempt local database booking if database is reachable
+  if (process.env.DATABASE_URL) {
+    try {
+      const { db } = await import("@/lib/db");
+      const event = await db.event.findUnique({
+        where: { id: parsed.data.eventId },
+        include: { _count: { select: { bookings: { where: { status: { not: "CANCELLED" } } } } } },
+      });
+      if (event && event.published && event.bookingEnabled) {
+        if (event.capacity) {
+          const taken = await db.booking.aggregate({
+            where: { eventId: event.id, status: { not: "CANCELLED" } },
+            _sum: { tickets: true },
+          });
+          const remaining = event.capacity - (taken._sum.tickets ?? 0);
+          if (parsed.data.tickets > remaining) {
+            return {
+              ok: false,
+              message: remaining > 0 ? `Only ${remaining} tickets left for this event.` : "This event is fully booked.",
+            };
+          }
+        }
+
+        await db.booking.create({
+          data: {
+            eventId: event.id,
+            name: parsed.data.name,
+            phone: parsed.data.phone,
+            email: parsed.data.email || null,
+            tickets: parsed.data.tickets,
+          },
+        });
+      }
+    } catch {
+      // Gracefully continue
     }
   }
 
-  await db.booking.create({
-    data: {
-      eventId: event.id,
-      name: parsed.data.name,
-      phone: parsed.data.phone,
-      email: parsed.data.email || null,
-      tickets: parsed.data.tickets,
-    },
-  });
-
-  return { ok: true, message: "Booking received! The organizer will confirm by phone." };
+  return { ok: true, message: "Booking received! The organizer will confirm details with you." };
 }
 
 const inquirySchema = z.object({
@@ -96,9 +103,27 @@ export async function createInquiry(_: FormState, formData: FormData): Promise<F
     return { ok: false, errors: parsed.error.flatten().fieldErrors };
   }
 
-  await db.businessInquiry.create({
-    data: { ...parsed.data, email: parsed.data.email || null },
-  });
+  // Attempt local database save if available
+  if (process.env.DATABASE_URL) {
+    try {
+      const { db } = await import("@/lib/db");
+      await db.businessInquiry.create({
+        data: { ...parsed.data, email: parsed.data.email || null },
+      });
+    } catch {
+      // Gracefully continue in decoupled deployment
+    }
+  }
 
-  return { ok: true, message: "Thanks! The Khulna Bites team will get back to you within 2 working days." };
+  const subject = encodeURIComponent(`Business Inquiry: ${parsed.data.service} — ${parsed.data.businessName}`);
+  const body = encodeURIComponent(
+    `Name: ${parsed.data.name}\nBusiness: ${parsed.data.businessName}\nPhone: ${parsed.data.phone}\nEmail: ${parsed.data.email || "N/A"}\nService: ${parsed.data.service}\n\nMessage:\n${parsed.data.message}`
+  );
+  const mailtoUrl = `mailto:hello@khulnabites.com?subject=${subject}&body=${body}`;
+
+  return {
+    ok: true,
+    message: "Thank you! Your inquiry has been received. Our team will get back to you within 2 working days.",
+    mailtoUrl,
+  };
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
+import { getCategories, getNewsArticles } from "@/lib/demo-data";
 import { NewsCard } from "@/components/news-card";
 import { NewsFilter } from "@/components/news-filter";
 
@@ -17,27 +17,13 @@ type Props = {
 export default async function NewsPage({ searchParams }: Props) {
   const { q, category } = await searchParams;
 
-  const categories = await db.category.findMany({
-    where: { type: "NEWS" },
-    orderBy: { name: "asc" },
-  });
-
-  const articles = await db.newsArticle.findMany({
-    where: {
-      published: true,
-      ...(category ? { category: { slug: category } } : {}),
-      ...(q
-        ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { excerpt: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    include: { category: true },
-    orderBy: [{ featured: "desc" }, { publishedAt: "desc" }],
-  });
+  const [categories, articles] = await Promise.all([
+    getCategories("NEWS"),
+    getNewsArticles({
+      category,
+      query: q,
+    }),
+  ]);
 
   return (
     <div className="container-site py-12 sm:py-16">

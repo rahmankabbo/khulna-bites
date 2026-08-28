@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { Offer, Category } from "@prisma/client";
+import type { Offer, Category } from "@/lib/types";
 import { daysUntil } from "@/lib/utils";
 
-type Props = { offer: Offer & { category: Category | null } };
+type Props = { offer: Offer };
 
 export function OfferCard({ offer }: Props) {
   const daysLeft = daysUntil(offer.expiryDate);

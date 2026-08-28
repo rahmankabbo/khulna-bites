@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { getNewsArticleBySlug, getRelatedNewsArticles, getAllNewsSlugs } from "@/lib/demo-data";
 import { formatDate } from "@/lib/utils";
 import { NewsCard } from "@/components/news-card";
 
@@ -10,9 +10,13 @@ export const revalidate = 60;
 
 type Props = { params: Promise<{ slug: string }> };
 
+export function generateStaticParams() {
+  return getAllNewsSlugs().map((slug) => ({ slug }));
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const article = await db.newsArticle.findUnique({ where: { slug } });
+  const article = await getNewsArticleBySlug(slug);
   if (!article) return { title: "Story not found" };
   return {
     title: article.title,
@@ -30,22 +34,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
-  const article = await db.newsArticle.findFirst({
-    where: { slug, published: true },
-    include: { category: true },
-  });
+  const article = await getNewsArticleBySlug(slug);
   if (!article) notFound();
 
-  const related = await db.newsArticle.findMany({
-    where: {
-      published: true,
-      id: { not: article.id },
-      ...(article.categoryId ? { categoryId: article.categoryId } : {}),
-    },
-    include: { category: true },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-  });
+  const related = await getRelatedNewsArticles(slug, article.categoryId, 3);
 
   return (
     <article className="container-site py-12 sm:py-16">

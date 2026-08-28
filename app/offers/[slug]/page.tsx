@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { getOfferBySlug, getAllOfferSlugs } from "@/lib/demo-data";
 import { formatDate, startOfToday, daysUntil } from "@/lib/utils";
 
 export const revalidate = 60;
 
 type Props = { params: Promise<{ slug: string }> };
 
+export function generateStaticParams() {
+  return getAllOfferSlugs().map((slug) => ({ slug }));
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const offer = await db.offer.findUnique({ where: { slug } });
+  const offer = await getOfferBySlug(slug);
   if (!offer) return { title: "Offer not found" };
   return {
     title: `${offer.value} — ${offer.businessName}`,
@@ -22,10 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function OfferPage({ params }: Props) {
   const { slug } = await params;
-  const offer = await db.offer.findFirst({
-    where: { slug },
-    include: { category: true },
-  });
+  const offer = await getOfferBySlug(slug);
   if (!offer) notFound();
 
   const live = offer.active && new Date(offer.expiryDate) >= startOfToday();

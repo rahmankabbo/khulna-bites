@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { isOfferLive, startOfToday } from "@/lib/utils";
+import { getNewsArticles, getOffers, getEvents } from "@/lib/demo-data";
 import { NewsCard } from "@/components/news-card";
 import { OfferCard } from "@/components/offer-card";
 import { EventCard } from "@/components/event-card";
@@ -10,23 +9,9 @@ export const revalidate = 60; // refresh public data at most once a minute
 
 export default async function HomePage() {
   const [news, offers, events] = await Promise.all([
-    db.newsArticle.findMany({
-      where: { published: true },
-      include: { category: true },
-      orderBy: { publishedAt: "desc" },
-      take: 7,
-    }),
-    db.offer.findMany({
-      where: { active: true, expiryDate: { gte: startOfToday() } },
-      include: { category: true },
-      orderBy: { createdAt: "desc" },
-      take: 3,
-    }),
-    db.event.findMany({
-      where: { published: true, date: { gte: startOfToday() } },
-      orderBy: { date: "asc" },
-      take: 3,
-    }),
+    getNewsArticles({ take: 7 }),
+    getOffers({ activeOnly: true, take: 3 }),
+    getEvents({ upcoming: true, take: 3 }),
   ]);
 
   const lead = news[0];

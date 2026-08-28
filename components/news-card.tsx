@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { NewsArticle, Category } from "@prisma/client";
+import type { NewsArticle, Category } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 type Props = {
-  article: NewsArticle & { category: Category | null };
+  article: NewsArticle;
   /** "large" for the editorial lead story, "row" for compact lists. */
   variant?: "card" | "large" | "row";
 };

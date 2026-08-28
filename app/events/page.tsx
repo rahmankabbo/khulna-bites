@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
-import { startOfToday } from "@/lib/utils";
+import { getEvents } from "@/lib/demo-data";
 import { EventCard } from "@/components/event-card";
 
 export const metadata: Metadata = {
@@ -12,15 +11,8 @@ export const revalidate = 60;
 
 export default async function EventsPage() {
   const [upcoming, past] = await Promise.all([
-    db.event.findMany({
-      where: { published: true, date: { gte: startOfToday() } },
-      orderBy: { date: "asc" },
-    }),
-    db.event.findMany({
-      where: { published: true, date: { lt: startOfToday() } },
-      orderBy: { date: "desc" },
-      take: 4,
-    }),
+    getEvents({ upcoming: true }),
+    getEvents({ past: true, take: 4 }),
   ]);
 
   return (

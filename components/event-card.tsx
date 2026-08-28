@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { Event } from "@prisma/client";
+import type { Event } from "@/lib/types";
 
-type Props = { event: Event & { _count?: { bookings: number } } };
+type Props = { event: Event };
 
 export function EventCard({ event }: Props) {
   const d = new Date(event.date);

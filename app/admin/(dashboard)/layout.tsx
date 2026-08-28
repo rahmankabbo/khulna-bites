@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getAdmin } from "@/lib/auth";
 import { AdminSidebar } from "@/components/admin/sidebar";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const admin = await getAdmin();
   if (!admin) redirect("/admin/login");

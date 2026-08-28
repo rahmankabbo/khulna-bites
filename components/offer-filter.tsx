@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useTransition } from "react";
-import type { Category } from "@prisma/client";
+import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = { categories: Category[]; category: string };
