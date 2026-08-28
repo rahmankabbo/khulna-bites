@@ -1,0 +1,160 @@
+// Khulna Bites — Prisma schema
+// PostgreSQL. Run `npm run db:push` (dev) or `npm run db:migrate` (migrations)
+// after changing this file, then `npm run db:seed` to load demo content.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Admin users ────────────────────────────────────────────────────────────
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String   @default("Admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Categories (shared by news and offers, separated by `type`) ────────────
+
+enum CategoryType {
+  NEWS
+  OFFER
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  type      CategoryType
+  news      NewsArticle[]
+  offers    Offer[]
+  createdAt DateTime     @default(now())
+
+  @@index([type])
+}
+
+// ─── News ───────────────────────────────────────────────────────────────────
+
+model NewsArticle {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  excerpt      String
+  content      String    @db.Text
+  coverImage   String // path under /public, e.g. /images/news-1.jpg
+  author       String    @default("Khulna Bites Desk")
+  externalUrl  String? // when set, the public page shows "Read Full Article →"
+  featured     Boolean   @default(false)
+  published    Boolean   @default(false)
+  publishedAt  DateTime  @default(now())
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+  @@index([featured])
+}
+
+// ─── Offers ─────────────────────────────────────────────────────────────────
+
+model Offer {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  businessName String
+  description  String    @db.Text
+  value        String // e.g. "20% OFF", "Buy 1 Get 1", "৳200 off"
+  coverImage   String
+  location     String
+  contact      String?
+  terms        String?   @db.Text
+  externalUrl  String?
+  active       Boolean   @default(true)
+  startDate    DateTime  @default(now())
+  expiryDate   DateTime
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([active, expiryDate])
+}
+
+// ─── Events & bookings ──────────────────────────────────────────────────────
+
+model Event {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  description    String    @db.Text
+  coverImage     String
+  date           DateTime // day of the event
+  startTime      String // "18:00"
+  endTime        String?
+  venue          String
+  location       String?
+  organizer      String?
+  ticketPrice    String? // "৳500" or "Free"
+  bookingUrl     String? // external booking page — takes priority over the internal form
+  capacity       Int?
+  bookingEnabled Boolean   @default(true)
+  published      Boolean   @default(false)
+  bookings       Booking[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([published, date])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  email     String?
+  tickets   Int           @default(1)
+  status    BookingStatus @default(PENDING)
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([eventId])
+}
+
+// ─── Business inquiries ("Business With Us" form) ───────────────────────────
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
+model BusinessInquiry {
+  id           String        @id @default(cuid())
+  name         String
+  businessName String
+  phone        String
+  email        String?
+  service      String // Advertising / Sponsored Content / Event Promotion / Collaboration
+  message      String       @db.Text
+  read         Boolean       @default(false)
+  status       InquiryStatus @default(NEW)
+  createdAt    DateTime      @default(now())
+
+  @@index([status, createdAt])
+}

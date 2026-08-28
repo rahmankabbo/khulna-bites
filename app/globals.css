@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  ::selection {
+    @apply bg-sundari text-paper;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-sundari ring-offset-2 ring-offset-paper;
+  }
+}
+
+@layer components {
+  /* Layout */
+  .container-site {
+    @apply mx-auto w-full max-w-site px-5 sm:px-8;
+  }
+
+  /* Type */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-sundari;
+  }
+  .headline-display {
+    @apply font-display font-bold leading-[1.04] tracking-[-0.015em];
+  }
+
+  /* UI atoms */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-sundari text-paper hover:bg-sundari-dark active:scale-[0.98];
+  }
+  .btn-outline {
+    @apply btn border border-ink/20 bg-transparent text-ink hover:border-ink hover:bg-ink hover:text-paper active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn text-sundari hover:bg-sundari-tint;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-mute;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-white shadow-card transition-shadow duration-300 hover:shadow-lift;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-2.5 text-sm text-ink placeholder:text-mute/60 focus:border-sundari focus:outline-none focus:ring-2 focus:ring-sundari/20 disabled:bg-paper;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-mute;
+  }
+  .td {
+    @apply px-4 py-3 text-sm text-ink;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .badge-green {
+    @apply badge bg-sundari-tint text-sundari-dark;
+  }
+  .badge-amber {
+    @apply badge bg-amber-tint text-amber;
+  }
+  .badge-gray {
+    @apply badge bg-ink/5 text-mute;
+  }
+  .badge-red {
+    @apply badge bg-red-50 text-red-700;
+  }
+
+  /* Article body typography */
+  .prose-kb p {
+    @apply mb-5 leading-relaxed text-ink/85;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Very subtle entrance animation — respects reduced motion. */
+@keyframes kb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.kb-rise {
+  animation: kb-rise 0.5s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb-rise {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
